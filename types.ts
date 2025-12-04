@@ -39,6 +39,25 @@ export interface ImagePin extends BasePin {
   type: 'image';
   url: string;
   file: File;
+  /**
+   * Optional user-facing name for the image. This can differ from the underlying File.name
+   * and is persisted in localStorage as part of the pin state.
+   */
+  displayName?: string;
+  /**
+   * The original file name saved for reference when serializing to localStorage.
+   * Not used for display, but kept for backwards compatibility with saved boards.
+   */
+  fileName?: string;
+  /**
+   * Original pixel resolution of the image; used for hover metadata.
+   */
+  imageWidth?: number;
+  imageHeight?: number;
+  /**
+   * Where this image came from; used for hover metadata.
+   */
+  source?: 'upload' | 'generated';
 }
 
 export interface TextPin extends BasePin {

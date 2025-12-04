@@ -3,10 +3,12 @@ import { Pin, FlowBoardResponse, ImagePin, TextPin, ColorPin, BoardDnaPin, Image
 import Header from './components/Header';
 import PinBoard from './components/PinBoard';
 import FloatingActionButton from './components/FloatingActionButton';
-import AgentPanel from './components/AgentPanel';
 import AddTextModal from './components/modals/AddTextModal';
 import AddColorModal from './components/modals/AddColorModal';
 import ExportModal from './components/modals/ExportModal';
+import ShortcutsModal from './components/modals/ShortcutsModal';
+import SettingsModal from './components/modals/SettingsModal';
+import CommandPalette from './components/CommandPalette';
 import { analyzeBoard, generateImage } from './services/geminiService';
 import { useHistoryState } from './hooks/useHistoryState';
 import { initDB, saveFile, getFile, deleteFile } from './services/dbService';
@@ -52,6 +54,10 @@ const App: React.FC = () => {
   const [mode, setMode] = useState<FlowMode>('explore');
   const [environmentId, setEnvironmentId] = useState<string>('night-studio');
   const [experienceMode, setExperienceMode] = useState<ExperienceMode>('hybrid');
+  const [showImageLabels, setShowImageLabels] = useState<boolean>(true);
+  // Track whether the user's pointer is currently over the board so we can
+  // scope Undo / Redo keyboard shortcuts to the canvas context only.
+  const [isBoardActive, setIsBoardActive] = useState<boolean>(false);
 
   const environment: FlowEnvironment = useMemo(() => {
     return (
@@ -119,6 +125,9 @@ const App: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [suggestedColors, setSuggestedColors] = useState<string[]>([]);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [isShortcutsOpen, setShortcutsOpen] = useState(false);
+  const [isSettingsOpen, setSettingsOpen] = useState(false);
+  const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   const [lastAnalysis, setLastAnalysis] = useState<FlowBoardResponse | null>(null);
   const [analysisCacheKey, setAnalysisCacheKey] = useState<string | null>(null);
@@ -178,6 +187,9 @@ const App: React.FC = () => {
         if (savedState.experienceMode) {
           setExperienceMode(savedState.experienceMode as ExperienceMode);
         }
+        if (typeof savedState.showImageLabels === 'boolean') {
+          setShowImageLabels(savedState.showImageLabels);
+        }
 
         const hydratedPins = await Promise.all(
           savedState.boardState.pins.map(async (pin: any) => {
@@ -218,12 +230,12 @@ const App: React.FC = () => {
 
     const saveState = async () => {
       try {
-        const serializablePins = [];
+        const serializablePins: any[] = [];
         for (const pin of state.pins) {
           if (pin.type === 'image' && pin.file) {
             await saveFile(pin.id, pin.file);
             // Omit file and url from the object saved to localStorage
-            const { file, url, ...rest } = pin;
+            const { file, url, ...rest } = pin as ImagePin;
             serializablePins.push({ ...rest, fileName: file.name });
           } else {
             serializablePins.push(pin);
@@ -235,6 +247,7 @@ const App: React.FC = () => {
           mode,
           environmentId,
           experienceMode,
+          showImageLabels,
         };
         localStorage.setItem('flowboard-state', JSON.stringify(stateToSave));
       } catch (err) {
@@ -247,12 +260,20 @@ const App: React.FC = () => {
     };
 
     saveState();
-  }, [state, mode, environmentId, experienceMode, isHydrating]);
+  }, [state, mode, environmentId, experienceMode, showImageLabels, isHydrating]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Let native undo/redo work inside text inputs, textareas, and
+      // contenteditable regions.
       if ((e.target as HTMLElement).closest('input, textarea, [contenteditable]')) {
           return;
+      }
+
+      // Scope undo/redo shortcuts to the board context only so we don't
+      // interfere with host pages or other parts of the UI.
+      if (!isBoardActive) {
+        return;
       }
       
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -276,7 +297,7 @@ const App: React.FC = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [handleUndo, handleRedo]);
+  }, [handleUndo, handleRedo, isBoardActive]);
 
 
   // Effect for global drag-and-drop
@@ -381,6 +402,9 @@ const App: React.FC = () => {
                     y: center.y,
                     width: newWidth,
                     height: newHeight,
+                    imageWidth: width,
+                    imageHeight: height,
+                    source: 'upload',
                 };
                 return pin;
             });
@@ -660,6 +684,28 @@ const App: React.FC = () => {
     };
   }, [handleOpenColorModal]);
 
+  // Global command palette (Cmd/Ctrl+K)
+  useEffect(() => {
+    const handleCommandPalette = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement).closest('input, textarea, [contenteditable]')) {
+        return;
+      }
+
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const modifierKey = isMac ? e.metaKey : e.ctrlKey;
+
+      if (modifierKey && !e.shiftKey && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCommandPaletteOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleCommandPalette);
+    return () => {
+      window.removeEventListener('keydown', handleCommandPalette);
+    };
+  }, []);
+
   const handleAddColor = (hex: string) => {
     const center = pinBoardRef.current?.getCenter() ?? { x: 300, y: 300 };
     const newColorPin: ColorPin = {
@@ -784,6 +830,10 @@ const App: React.FC = () => {
           onToggleFlowMode={() => setMode(prev => (prev === 'explore' ? 'flow' : 'explore'))}
           onChangeEnvironment={setEnvironmentId}
           onChangeExperienceMode={setExperienceMode}
+          showImageLabels={showImageLabels}
+          onToggleImageLabels={() => setShowImageLabels(prev => !prev)}
+          onOpenShortcuts={() => setShortcutsOpen(true)}
+          onOpenSettings={() => setSettingsOpen(true)}
         />
         <main className="flex-1 relative">
           <PinBoard 
@@ -792,6 +842,7 @@ const App: React.FC = () => {
             setPins={setPins}
             links={links}
             setLinks={setLinks}
+            showImageLabels={showImageLabels}
             newlyGeneratedImage={newlyGeneratedImage}
             onImagePinned={() => setNewlyGeneratedImage(null)}
             onGenerateImage={handleGenerateImage}
@@ -808,6 +859,8 @@ const App: React.FC = () => {
             setSelectedPinIds={setSelectedPinIds}
             isFlowMode={isFlowMode}
             environment={environment}
+            onBoardPointerEnter={() => setIsBoardActive(true)}
+            onBoardPointerLeave={() => setIsBoardActive(false)}
           />
           <FloatingActionButton 
             isAnalyzing={isLoading || isGeneratingFromTag || isAutoAnalyzing}
@@ -822,17 +875,6 @@ const App: React.FC = () => {
             onAnalyzeRemixes={handleAnalyzeRemixes}
             onAnalyzeDoNext={handleAnalyzeDoNext}
           />
-          {(experienceMode === 'ai' || experienceMode === 'hybrid') && (
-            <AgentPanel
-              experienceMode={experienceMode}
-              analysis={lastAnalysis}
-              isAnalyzing={isLoading || isGeneratingFromTag || isAutoAnalyzing}
-              hasImages={pins.some((p) => p.type === 'image')}
-              onAnalyzeNow={() => {
-                void getAnalysis();
-              }}
-            />
-          )}
         </main>
         {isAddTextModalOpen && (
           <AddTextModal 
@@ -852,6 +894,32 @@ const App: React.FC = () => {
             onClose={() => setExportModalOpen(false)}
             onExport={handleExport}
             isExporting={isExporting}
+          />
+        )}
+        {isShortcutsOpen && (
+          <ShortcutsModal onClose={() => setShortcutsOpen(false)} />
+        )}
+        {isSettingsOpen && (
+          <SettingsModal
+            mode={mode}
+            isFlowMode={isFlowMode}
+            experienceMode={experienceMode}
+            environmentId={environment.id}
+            showImageLabels={showImageLabels}
+            onToggleFlowMode={() => setMode(prev => (prev === 'explore' ? 'flow' : 'explore'))}
+            onChangeExperienceMode={setExperienceMode}
+            onChangeEnvironment={setEnvironmentId}
+            onToggleImageLabels={() => setShowImageLabels(prev => !prev)}
+            onClose={() => setSettingsOpen(false)}
+          />
+        )}
+        {isCommandPaletteOpen && (
+          <CommandPalette
+            onClose={() => setCommandPaletteOpen(false)}
+            onShowShortcuts={() => {
+              setShortcutsOpen(true);
+              setCommandPaletteOpen(false);
+            }}
           />
         )}
         {notification && <NotificationToast message={notification} />}

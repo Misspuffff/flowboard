@@ -19,6 +19,10 @@ interface HeaderProps {
   onToggleFlowMode: () => void;
   onChangeEnvironment: (id: string) => void;
   onChangeExperienceMode: (mode: ExperienceMode) => void;
+  showImageLabels: boolean;
+  onToggleImageLabels: () => void;
+  onOpenShortcuts: () => void;
+  onOpenSettings: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -34,26 +38,36 @@ const Header: React.FC<HeaderProps> = ({
   onToggleFlowMode,
   onChangeEnvironment,
   onChangeExperienceMode,
+  showImageLabels,
+  onToggleImageLabels,
+  onOpenShortcuts,
+  onOpenSettings,
 }) => {
   const [modifierSymbol, setModifierSymbol] = useState('Ctrl');
   const [redoShortcut, setRedoShortcut] = useState('Ctrl+Y');
   const [isEnvPopoverOpen, setEnvPopoverOpen] = useState(false);
 
+  const experienceCopy: Record<ExperienceMode, string> = {
+    manual: 'You drive. No automatic AI responses.',
+    ai: 'Agent stays in sync with your canvas.',
+    hybrid: 'Blend of manual pins and live AI help.',
+  };
+
   const experienceOptions: { id: ExperienceMode; label: string; title: string }[] = [
     {
       id: 'manual',
       label: 'Manual',
-      title: 'Only show manually curated tools (no AI helpers).',
+      title: experienceCopy.manual,
     },
     {
       id: 'ai',
       label: 'AI',
-      title: 'Emphasize AI helpers powered by your current canvas.',
+      title: experienceCopy.ai,
     },
     {
       id: 'hybrid',
       label: 'Hybrid',
-      title: 'Use both manual tools and AI helpers.',
+      title: experienceCopy.hybrid,
     },
   ];
 
@@ -80,13 +94,6 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-3 font-mono text-xs sm:text-sm text-slate-200">
-          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/60 border border-slate-700/80 text-[11px]">
-            <span className="text-slate-400">Undo</span>
-            <span className="font-semibold text-slate-100">{modifierSymbol}+Z</span>
-            <span className="mx-1 text-slate-700">•</span>
-            <span className="text-slate-400">Redo</span>
-            <span className="font-semibold text-slate-100">{redoShortcut}</span>
-          </div>
           <button
             onClick={onExport}
             className="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all text-slate-100 bg-slate-800/80 hover:bg-slate-700 active:scale-95 border border-slate-700/80"
@@ -97,8 +104,9 @@ const Header: React.FC<HeaderProps> = ({
             <span className="font-semibold">Export</span>
           </button>
           <button
+            type="button"
             onClick={() => setEnvPopoverOpen((prev) => !prev)}
-            className="hidden sm:inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all border text-slate-100 bg-slate-800/80 border-slate-700/80 hover:bg-slate-700"
+            className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all border text-slate-100 bg-slate-800/80 border-slate-700/80 hover:bg-slate-700"
             aria-label="Choose flow environment"
             title={`Environment: ${environment.name}`}
           >
@@ -107,45 +115,81 @@ const Header: React.FC<HeaderProps> = ({
               {environment.name}
             </span>
           </button>
-          <div className="hidden xl:flex items-center gap-1 px-1 py-1 rounded-full bg-slate-900/80 border border-slate-700/80">
-            {experienceOptions.map((option) => {
-              const isActive = experienceMode === option.id;
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => onChangeExperienceMode(option.id)}
-                  className={`px-2 py-0.5 rounded-full text-[11px] font-mono uppercase tracking-wide transition-all ${
-                    isActive
-                      ? 'bg-slate-100 text-slate-900 shadow-sm'
-                      : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
-                  }`}
-                  aria-pressed={isActive}
-                  title={option.title}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
+          <div className="hidden xl:flex flex-col items-start gap-0.5">
+            <div className="flex items-center gap-1 px-1 py-1 rounded-full bg-slate-900/80 border border-slate-700/80">
+              {experienceOptions.map((option) => {
+                const isActive = experienceMode === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => onChangeExperienceMode(option.id)}
+                    className={`px-2 py-0.5 rounded-full text-[11px] font-mono uppercase tracking-wide transition-all ${
+                      isActive
+                        ? 'bg-slate-100 text-slate-900 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
+                    }`}
+                    aria-pressed={isActive}
+                    title={option.title}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+            <span className="text-[10px] text-slate-500 font-sans truncate max-w-xs">
+              {experienceCopy[experienceMode]}
+            </span>
           </div>
           <button
-            onClick={onToggleFlowMode}
-            className={`hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all border ${
-              isFlowMode
-                ? 'text-emerald-100 bg-emerald-500/20 border-emerald-400/80 hover:bg-emerald-500/30'
-                : 'text-slate-100 bg-slate-800/80 border-slate-700/80 hover:bg-slate-700'
-            }`}
-            aria-pressed={isFlowMode}
-            aria-label="Toggle Flow Mode (Cmd/Ctrl+Shift+F)"
-            title={
-              isFlowMode
-                ? 'Flow mode on — toggle off (⌘/Ctrl+Shift+F)'
-                : 'Enter flow mode (⌘/Ctrl+Shift+F)'
-            }
-          >
-            <span className="font-semibold">Flow</span>
-          </button>
-          <div className="w-px h-6 bg-slate-700/80 mx-1 sm:mx-2" />
+             onClick={onToggleFlowMode}
+             className={`hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all border ${
+               isFlowMode
+                 ? 'text-emerald-100 bg-emerald-500/20 border-emerald-400/80 hover:bg-emerald-500/30'
+                 : 'text-slate-100 bg-slate-800/80 border-slate-700/80 hover:bg-slate-700'
+             }`}
+             aria-pressed={isFlowMode}
+             aria-label="Toggle Flow Mode (Cmd/Ctrl+Shift+F)"
+             title={
+               isFlowMode
+                 ? 'Flow mode on — toggle off (⌘/Ctrl+Shift+F)'
+                 : 'Enter flow mode (⌘/Ctrl+Shift+F)'
+             }
+           >
+             <span className="font-semibold">Flow</span>
+           </button>
+           <button
+             onClick={onToggleImageLabels}
+             className={`hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all border text-xs font-mono ${
+               showImageLabels
+                 ? 'text-slate-100 bg-slate-800/80 border-slate-700/80 hover:bg-slate-700'
+                 : 'text-slate-400 bg-slate-900/60 border-slate-800 hover:bg-slate-800/80 hover:text-slate-100'
+             }`}
+             aria-pressed={showImageLabels}
+             aria-label="Toggle image filenames and metadata visibility"
+             title={showImageLabels ? 'Hide image filenames and metadata' : 'Show image filenames and metadata'}
+           >
+             <span className="font-semibold">Labels</span>
+           </button>
+           <button
+             onClick={onOpenSettings}
+             className="hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all border border-slate-700/80 text-[11px] bg-slate-900/60 hover:bg-slate-800/80 text-slate-100"
+             aria-label="Open settings"
+             title="Open settings"
+           >
+             <span className="text-slate-400">Board</span>
+             <span className="font-semibold text-slate-100">Settings</span>
+           </button>
+           <button
+             onClick={onOpenShortcuts}
+             className="hidden lg:inline-flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all border border-slate-700/80 text-[11px] bg-slate-900/60 hover:bg-slate-800/80 text-slate-100"
+             aria-label="Open Help / Shortcuts"
+             title="Keyboard shortcuts (Cmd/Ctrl+K or via menu)"
+           >
+             <span className="text-slate-400">Help</span>
+             <span className="font-semibold text-slate-100">Shortcuts</span>
+           </button>
+           <div className="w-px h-6 bg-slate-700/80 mx-1 sm:mx-2" />
           <button
             onClick={onUndo}
             disabled={!canUndo}

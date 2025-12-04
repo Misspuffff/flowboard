@@ -42,6 +42,11 @@ interface PinBoardProps {
   setSelectedPinIds: React.Dispatch<React.SetStateAction<string[]>>;
   isFlowMode: boolean;
   environment: FlowEnvironment;
+  showImageLabels: boolean;
+  // Notify parent when the pointer enters or leaves the board so
+  // keyboard shortcuts like Undo / Redo can be scoped to the canvas.
+  onBoardPointerEnter: () => void;
+  onBoardPointerLeave: () => void;
 }
 
 interface DragState {
@@ -92,7 +97,7 @@ const getClosestSide = (pin: Pin, point: { x: number, y: number }): LinkSide => 
 };
 
 const PinBoard = forwardRef((
-  { pins, setPins, links, setLinks, newlyGeneratedImage, onImagePinned, onGenerateImage, onGenerateFromTag, isGeneratingFromTag, generatingImageId, onAddColorFromDna, onAddTagAsNote, onAddTagAsTagPin, onDeletePin, onUpdatePin, onUpdateLink, selectedPinIds, setSelectedPinIds, isFlowMode, environment }: PinBoardProps, 
+  { pins, setPins, links, setLinks, newlyGeneratedImage, onImagePinned, onGenerateImage, onGenerateFromTag, isGeneratingFromTag, generatingImageId, onAddColorFromDna, onAddTagAsNote, onAddTagAsTagPin, onDeletePin, onUpdatePin, onUpdateLink, selectedPinIds, setSelectedPinIds, isFlowMode, environment, showImageLabels, onBoardPointerEnter, onBoardPointerLeave }: PinBoardProps, 
   ref
   ) => {
   const boardContainerRef = useRef<HTMLDivElement>(null);
@@ -209,7 +214,10 @@ const PinBoard = forwardRef((
             x,
             y,
             width: newWidth,
-            height: newHeight
+            height: newHeight,
+            imageWidth: img.naturalWidth,
+            imageHeight: img.naturalHeight,
+            source: 'generated',
           };
           setPins(prevPins => [...prevPins, newPin]);
           onImagePinned(); // Reset the state in App.tsx
@@ -594,7 +602,7 @@ const PinBoard = forwardRef((
     }
   };
 
-  const onMouseLeave = () => {
+  const handleBoardMouseLeave = () => {
     // Cancel any ongoing actions if mouse leaves the board
     if (linkingState) setLinkingState(null);
     if (panState.current.isPanning) panState.current.isPanning = false;
@@ -864,7 +872,7 @@ const PinBoard = forwardRef((
     // FIX: Updated switch to render specific analysis pins, removing the obsolete 'analysis-report' case.
     switch (pin.type) {
       case 'image':
-        return <ImagePinComponent key={pin.id} pin={pin} onMouseDown={onMouseDown} onDelete={onDeletePin} onResizeMouseDown={onResizeStart} onStartLinking={onStartLink} isDragging={isDragging} isResizing={isResizing} isSelected={isSelected} />;
+        return <ImagePinComponent key={pin.id} pin={pin} onMouseDown={onMouseDown} onDelete={onDeletePin} onResizeMouseDown={onResizeStart} onStartLinking={onStartLink} onUpdatePin={onUpdatePin} isDragging={isDragging} isResizing={isResizing} isSelected={isSelected} showLabel={showImageLabels} />;
       case 'text':
         return <TextPinComponent key={pin.id} pin={pin} onMouseDown={onMouseDown} onDelete={onDeletePin} onResizeMouseDown={onResizeStart} onStartLinking={onStartLink} onUpdatePin={onUpdatePin} isDragging={isDragging} isResizing={isResizing} isSelected={isSelected} />;
       case 'color':
@@ -905,8 +913,12 @@ const PinBoard = forwardRef((
       className={`w-full h-full border-t border-border-color relative overflow-hidden select-none cursor-grab ${environment.backgroundClass}`}
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
-      onMouseLeave={onMouseLeave}
+      onMouseLeave={() => {
+        handleBoardMouseLeave();
+        onBoardPointerLeave();
+      }}
       onMouseDown={onBoardMouseDown}
+      onMouseEnter={onBoardPointerEnter}
       onWheel={onWheel}
       role="region"
       aria-label="FlowBoard Canvas"
