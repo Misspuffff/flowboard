@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UndoIcon } from './icons/UndoIcon';
 import { RedoIcon } from './icons/RedoIcon';
 import { ExportIcon } from './icons/ExportIcon';
+import { AppearanceIcon } from './icons/AppearanceIcon';
 
 interface HeaderProps {
     onUndo: () => void;
@@ -9,10 +10,12 @@ interface HeaderProps {
     canUndo: boolean;
     canRedo: boolean;
     onExport: () => void;
+    isFlowMode: boolean;
+    onToggleFlowMode: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
-    onUndo, onRedo, canUndo, canRedo, onExport
+    onUndo, onRedo, canUndo, canRedo, onExport, isFlowMode, onToggleFlowMode
 }) => {
   const [modifierSymbol, setModifierSymbol] = useState('Ctrl');
   const [redoShortcut, setRedoShortcut] = useState('Ctrl+Y');
@@ -55,6 +58,20 @@ const Header: React.FC<HeaderProps> = ({
             >
                 <ExportIcon className="w-4 h-4" aria-hidden="true" />
                 <span className="font-semibold">Export</span>
+            </button>
+            <button
+                onClick={onToggleFlowMode}
+                className={`hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all border ${
+                  isFlowMode
+                    ? 'text-emerald-100 bg-emerald-500/20 border-emerald-400/80 hover:bg-emerald-500/30'
+                    : 'text-slate-100 bg-slate-800/80 border-slate-700/80 hover:bg-slate-700'
+                }`}
+                aria-pressed={isFlowMode}
+                aria-label="Toggle Flow Mode (Cmd/Ctrl+Shift+F)"
+                title={isFlowMode ? 'Flow mode on — toggle off (⌘/Ctrl+Shift+F)' : 'Enter flow mode (⌘/Ctrl+Shift+F)'}
+            >
+                <AppearanceIcon className="w-4 h-4" aria-hidden="true" />
+                <span className="font-semibold">Flow</span>
             </button>
              <div className="w-px h-6 bg-slate-700/80 mx-1 sm:mx-2"></div>
             <button 

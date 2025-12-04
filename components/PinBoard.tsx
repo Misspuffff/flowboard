@@ -40,6 +40,7 @@ interface PinBoardProps {
   onUpdateLink: (id: string, color: string) => void;
   selectedPinIds: string[];
   setSelectedPinIds: React.Dispatch<React.SetStateAction<string[]>>;
+  isFlowMode: boolean;
 }
 
 interface DragState {
@@ -89,7 +90,7 @@ const getClosestSide = (pin: Pin, point: { x: number, y: number }): LinkSide => 
 };
 
 const PinBoard = forwardRef((
-  { pins, setPins, links, setLinks, newlyGeneratedImage, onImagePinned, onGenerateImage, onGenerateFromTag, isGeneratingFromTag, generatingImageId, onAddColorFromDna, onAddTagAsNote, onAddTagAsTagPin, onDeletePin, onUpdatePin, onUpdateLink, selectedPinIds, setSelectedPinIds }: PinBoardProps, 
+  { pins, setPins, links, setLinks, newlyGeneratedImage, onImagePinned, onGenerateImage, onGenerateFromTag, isGeneratingFromTag, generatingImageId, onAddColorFromDna, onAddTagAsNote, onAddTagAsTagPin, onDeletePin, onUpdatePin, onUpdateLink, selectedPinIds, setSelectedPinIds, isFlowMode }: PinBoardProps, 
   ref
   ) => {
   const boardContainerRef = useRef<HTMLDivElement>(null);
@@ -907,11 +908,23 @@ const PinBoard = forwardRef((
 
       {localPins.length === 0 && (
         <div 
-          className="absolute inset-10 flex flex-col justify-center items-center text-center text-slate-400 border border-dashed border-slate-700/80 rounded-3xl cursor-default pointer-events-none bg-slate-900/40 backdrop-blur-sm p-6 export-hidden"
+          className={`absolute inset-10 flex flex-col justify-center items-center text-center rounded-3xl cursor-default pointer-events-none p-6 export-hidden ${
+            isFlowMode
+              ? 'text-slate-400'
+              : 'text-slate-400 border border-dashed border-slate-700/80 bg-slate-900/40 backdrop-blur-sm'
+          }`}
         >
-          <UploadIcon className="w-12 h-12 mb-4 text-slate-500" />
-          <p className="font-sans font-semibold text-lg text-slate-50">Drop images or use the toolbar to start a board.</p>
-          <p className="text-sm max-w-sm mx-auto mt-2 text-slate-400">Space + drag to pan, scroll to move, and Cmd/Ctrl + scroll to zoom. It should feel right at home if you use Figma or Miro.</p>
+          <UploadIcon className={`w-12 h-12 mb-4 ${isFlowMode ? 'text-slate-600' : 'text-slate-500'}`} />
+          <p className="font-sans font-semibold text-lg text-slate-50">
+            {isFlowMode
+              ? 'Drop images or paste (⌘/Ctrl+V) to start.'
+              : 'Drop images or use the toolbar to start a board.'}
+          </p>
+          <p className="text-sm max-w-sm mx-auto mt-2 text-slate-400">
+            {isFlowMode
+              ? 'Space + drag to pan, scroll to move, Cmd/Ctrl + scroll to zoom.'
+              : 'Space + drag to pan, scroll to move, and Cmd/Ctrl + scroll to zoom. It should feel right at home if you use Figma or Miro.'}
+          </p>
         </div>
       )}
 

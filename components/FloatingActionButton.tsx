@@ -19,10 +19,12 @@ interface FABProps {
     onAnalyzeSuggestions: () => void;
     onAnalyzeRemixes: () => void;
     onAnalyzeDoNext: () => void;
+    isFlowMode: boolean;
 }
 
 const FloatingActionButton: React.FC<FABProps> = ({ 
     isAnalyzing, 
+    isFlowMode,
     onAddText, 
     onAddColor,
     // FIX: Destructure new granular handlers.
@@ -59,7 +61,11 @@ const FloatingActionButton: React.FC<FABProps> = ({
                         <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/5 group-hover:bg-white/20">
                             {btn.icon}
                         </div>
-                        <span className="font-mono uppercase tracking-wide hidden sm:inline">
+                        <span
+                            className={`font-mono uppercase tracking-wide ${
+                                isFlowMode ? 'hidden' : 'hidden sm:inline'
+                            }`}
+                        >
                             {isAnalyzing && btn.disabled ? 'Riff…' : btn.label}
                         </span>
                     </button>

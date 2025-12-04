@@ -47,6 +47,7 @@ const NotificationToast: React.FC<{message: string}> = ({ message }) => {
 
 const App: React.FC = () => {
   const [isHydrating, setIsHydrating] = useState(true);
+  const [isFlowMode, setIsFlowMode] = useState(false);
 
   const { 
     state, 
@@ -242,6 +243,42 @@ const App: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [handleUndo, handleRedo]);
+
+  useEffect(() => {
+    const handleShortcuts = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement).closest('input, textarea, [contenteditable]')) {
+        return;
+      }
+
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const modifierKey = isMac ? e.metaKey : e.ctrlKey;
+
+      if (!modifierKey || !e.shiftKey) {
+        return;
+      }
+
+      const key = e.key.toLowerCase();
+
+      if (key === 'n') {
+        e.preventDefault();
+        setAddTextModalOpen(true);
+      } else if (key === 'c') {
+        e.preventDefault();
+        handleOpenColorModal();
+      } else if (key === 'e') {
+        e.preventDefault();
+        setExportModalOpen(true);
+      } else if (key === 'f') {
+        e.preventDefault();
+        setIsFlowMode(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleShortcuts);
+    return () => {
+      window.removeEventListener('keydown', handleShortcuts);
+    };
+  }, [handleOpenColorModal]);
 
   // Effect for global drag-and-drop
   useEffect(() => {
@@ -660,6 +697,8 @@ const App: React.FC = () => {
           canUndo={canUndo} 
           canRedo={canRedo}
           onExport={() => setExportModalOpen(true)}
+          isFlowMode={isFlowMode}
+          onToggleFlowMode={() => setIsFlowMode(prev => !prev)}
         />
         <main className="flex-1 relative">
           <PinBoard 
@@ -682,9 +721,11 @@ const App: React.FC = () => {
             onUpdateLink={handleUpdateLink}
             selectedPinIds={selectedPinIds}
             setSelectedPinIds={setSelectedPinIds}
+            isFlowMode={isFlowMode}
           />
           <FloatingActionButton 
             isAnalyzing={isLoading || isGeneratingFromTag}
+            isFlowMode={isFlowMode}
             onAddText={() => setAddTextModalOpen(true)}
             onAddColor={handleOpenColorModal}
             onAnalyzeDna={handleAnalyzeDna}
