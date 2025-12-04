@@ -17,15 +17,16 @@ const config: Config = {
         mono: ['"Azeret Mono"', 'monospace'],
       },
       colors: {
-        background: '#F7F7F8',
-        surface: '#FFFFFF',
-        'surface-accent': '#F0F0F1',
-        'primary-text': '#1A1B1E',
-        'secondary-text': '#6B6B6B',
-        'tertiary-text': '#A0A0A0',
+        // Dark-friendly system colors tuned for the canvas environments
+        background: '#020617', // deep background (slate-950-ish)
+        surface: '#020617', // primary card surface (slate-900-ish)
+        'surface-accent': '#111827', // slightly elevated surface
+        'primary-text': '#E5E7EB', // light text on dark
+        'secondary-text': '#9CA3AF',
+        'tertiary-text': '#6B7280',
         brand: '#3B82F6',
         'brand-hover': '#2563EB',
-        'border-color': '#E5E7EB',
+        'border-color': '#1F2937',
       },
     },
   },

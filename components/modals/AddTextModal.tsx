@@ -60,10 +60,10 @@ const AddTextModal: React.FC<AddTextModalProps> = ({ onClose, onAdd }) => {
   };
   
   return (
-    <div className="fixed inset-0 bg-black/30 flex justify-center items-center z-50 font-sans" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 font-sans" onClick={onClose}>
       <div 
         ref={modalRef}
-        className="bg-white/70 backdrop-blur-2xl border border-border-color rounded-2xl shadow-2xl p-8 w-full max-w-md relative" 
+        className="bg-surface backdrop-blur-2xl border border-border-color rounded-2xl shadow-2xl p-8 w-full max-w-md relative" 
         onClick={e => e.stopPropagation()}
         role="dialog"
         aria-modal="true"

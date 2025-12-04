@@ -36,7 +36,7 @@ const DEFAULT_BOARD_STATE: BoardState = { pins: [], links: [] };
 const NotificationToast: React.FC<{message: string}> = ({ message }) => {
     return (
         <div 
-            className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-white/70 backdrop-blur-lg border border-border-color text-primary-text px-6 py-3 rounded-full shadow-lg z-50 animate-toast font-mono text-sm"
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-surface backdrop-blur-lg border border-border-color text-primary-text px-6 py-3 rounded-full shadow-lg z-50 animate-toast font-mono text-sm"
             role="status"
             aria-live="polite"
         >

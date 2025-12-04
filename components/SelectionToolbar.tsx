@@ -20,7 +20,7 @@ const SelectionToolbar: React.FC<SelectionToolbarProps> = ({ bounds, onSummarize
         transform: 'translateX(-50%)',
       }}
     >
-      <div className="bg-white/70 backdrop-blur-lg border border-border-color rounded-lg shadow-lg p-2 flex items-center gap-4 font-mono text-sm">
+      <div className="bg-surface backdrop-blur-lg border border-border-color rounded-lg shadow-lg p-2 flex items-center gap-4 font-mono text-sm">
         <span className="text-primary-text font-semibold px-2">{count} pins selected</span>
         <div className="w-px h-6 bg-border-color"></div>
         <button

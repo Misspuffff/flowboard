@@ -91,13 +91,13 @@ const LinkLayer: React.FC<LinkLayerProps> = ({ pins, links, linkingState, onDele
               
               {/* Controls Wrapper: Color Palette + Delete Button */}
               <foreignObject x={midX - 60} y={midY - 16} width="120" height="32" className="pointer-events-auto opacity-0 group-hover:opacity-100 transition-opacity overflow-visible">
-                 <div className="flex items-center justify-center gap-1 p-1 bg-white/70 backdrop-blur-md border border-border-color rounded-full shadow-lg" onMouseDown={e => e.stopPropagation()}>
+                 <div className="flex items-center justify-center gap-1 p-1 bg-surface backdrop-blur-md border border-border-color rounded-full shadow-lg" onMouseDown={e => e.stopPropagation()}>
                     {LINK_COLORS.map(c => (
                         <button
                             key={c}
                             onClick={() => onUpdateLink(link.id, c)}
                             onMouseDown={e => e.stopPropagation()}
-                            className={`w-5 h-5 rounded-full transition-transform hover:scale-125 active:scale-110 focus:outline-none ${color === c ? 'ring-2 ring-brand ring-offset-2 ring-offset-white/70' : 'ring-1 ring-black/10'}`}
+                            className={`w-5 h-5 rounded-full transition-transform hover:scale-125 active:scale-110 focus:outline-none ${color === c ? 'ring-2 ring-brand ring-offset-2 ring-offset-surface' : 'ring-1 ring-black/10'}`}
                             style={{ backgroundColor: c }}
                             aria-label={`Set link color to ${c}`}
                             title={`Set link color to ${c}`}

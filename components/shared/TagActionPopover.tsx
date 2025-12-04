@@ -101,8 +101,8 @@ const TagActionPopover: React.FC<TagActionPopoverProps> = ({ tag, position, isGe
     <div
       ref={popoverRef}
       role="menu"
-      aria-label={`Actions for tag "${tag}"`}
-      className="fixed z-50 bg-white/70 backdrop-blur-xl border border-border-color rounded-xl shadow-2xl p-2 flex flex-col items-stretch gap-1 animate-fade-in-fast min-w-[180px]"
+      aria-label={`Actions for tag \"${tag}\"`}
+      className="fixed z-50 bg-surface backdrop-blur-xl border border-border-color rounded-xl shadow-2xl p-2 flex flex-col items-stretch gap-1 animate-fade-in-fast min-w-[180px]"
       style={{
         top: position.top,
         left: position.left,

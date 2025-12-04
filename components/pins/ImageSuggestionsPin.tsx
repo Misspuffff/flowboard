@@ -10,7 +10,7 @@ interface ImageSuggestionCardProps {
 
 const ImageSuggestionCard: React.FC<ImageSuggestionCardProps> = ({ suggestion, onGenerate, isGenerating }) => (
     <div className="bg-surface-accent p-3 rounded-lg mb-2 border border-border-color">
-        <p className="font-mono text-xs text-secondary-text bg-white p-2 rounded-md mb-2">"{suggestion.prompt}"</p>
+        <p className="font-mono text-xs text-secondary-text bg-surface p-2 rounded-md mb-2">"{suggestion.prompt}"</p>
         <button 
             onClick={() => onGenerate(suggestion.prompt, suggestion.card_id)}
             disabled={isGenerating}
