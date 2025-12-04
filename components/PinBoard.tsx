@@ -622,6 +622,18 @@ const PinBoard = forwardRef((
     setTransform({ x: newX, y: newY, scale: newScale });
   }, [transform.scale, transform.x, transform.y]);
 
+  // Keyboard nudging for selected pins (helps especially on trackpads)
+  const moveSelectedPins = useCallback((dx: number, dy: number) => {
+    if (selectedPinIds.length === 0) return;
+    setPins(prevPins =>
+      prevPins.map(pin =>
+        selectedPinIds.includes(pin.id)
+          ? { ...pin, x: pin.x + dx, y: pin.y + dy }
+          : pin
+      )
+    );
+  }, [selectedPinIds, setPins]);
+  
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
         if ((e.target as HTMLElement).closest('input, textarea, [contenteditable]')) {
@@ -767,18 +779,6 @@ const PinBoard = forwardRef((
   const handleResetView = () => {
     setTransform({ x: 0, y: 0, scale: 1 });
   };
-
-  // Keyboard nudging for selected pins (helps especially on trackpads)
-  const moveSelectedPins = useCallback((dx: number, dy: number) => {
-    if (selectedPinIds.length === 0) return;
-    setPins(prevPins =>
-      prevPins.map(pin =>
-        selectedPinIds.includes(pin.id)
-          ? { ...pin, x: pin.x + dx, y: pin.y + dy }
-          : pin
-      )
-    );
-  }, [selectedPinIds, setPins]);
   
   const selectionBounds = useMemo(() => {
     if (selectedPinIds.length === 0) return null;
