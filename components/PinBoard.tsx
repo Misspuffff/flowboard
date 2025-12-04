@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useImperativeHandle, forwardRef, useCallback, useMemo } from 'react';
-import { Pin, ImagePin, Link, LinkSide, ResizeCorner, TextPin, BoardDnaPin, ImageSuggestionsPin, RemixesPin, DoNextPin, ColorPin, StyleGuidePin, TagPin } from '../types';
+import { Pin, ImagePin, Link, LinkSide, ResizeCorner, TextPin, BoardDnaPin, ImageSuggestionsPin, RemixesPin, DoNextPin, ColorPin, StyleGuidePin, TagPin, FlowEnvironment } from '../types';
 import { UploadIcon } from './icons/UploadIcon';
 import ImagePinComponent from './pins/ImagePin';
 import TextPinComponent from './pins/TextPin';
@@ -41,6 +41,7 @@ interface PinBoardProps {
   selectedPinIds: string[];
   setSelectedPinIds: React.Dispatch<React.SetStateAction<string[]>>;
   isFlowMode: boolean;
+  environment: FlowEnvironment;
 }
 
 interface DragState {
@@ -91,13 +92,14 @@ const getClosestSide = (pin: Pin, point: { x: number, y: number }): LinkSide => 
 };
 
 const PinBoard = forwardRef((
-  { pins, setPins, links, setLinks, newlyGeneratedImage, onImagePinned, onGenerateImage, onGenerateFromTag, isGeneratingFromTag, generatingImageId, onAddColorFromDna, onAddTagAsNote, onAddTagAsTagPin, onDeletePin, onUpdatePin, onUpdateLink, selectedPinIds, setSelectedPinIds, isFlowMode }: PinBoardProps, 
+  { pins, setPins, links, setLinks, newlyGeneratedImage, onImagePinned, onGenerateImage, onGenerateFromTag, isGeneratingFromTag, generatingImageId, onAddColorFromDna, onAddTagAsNote, onAddTagAsTagPin, onDeletePin, onUpdatePin, onUpdateLink, selectedPinIds, setSelectedPinIds, isFlowMode, environment }: PinBoardProps, 
   ref
   ) => {
   const boardContainerRef = useRef<HTMLDivElement>(null);
   const boardContentRef = useRef<HTMLDivElement>(null);
   
   const [localPins, setLocalPins] = useState<Pin[]>(pins);
+  const localPinsRef = useRef<Pin[]>(pins);
   const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
   const panState = useRef({ isPanning: false, startPoint: { x: 0, y: 0 } });
   const isSpacePressedRef = useRef(false);
@@ -110,7 +112,13 @@ const PinBoard = forwardRef((
 
   useEffect(() => {
     setLocalPins(pins);
+    localPinsRef.current = pins;
   }, [pins]);
+
+  // Keep ref in sync with latest localPins so drag commits can't see stale values.
+  useEffect(() => {
+    localPinsRef.current = localPins;
+  }, [localPins]);
 
   useImperativeHandle(ref, () => ({
     getCenter: () => {
@@ -575,7 +583,7 @@ const PinBoard = forwardRef((
     }
     
     if (dragState || resizeState) {
-      setPins(localPins);
+      setPins(localPinsRef.current);
     }
     
     if (dragState) {
@@ -590,7 +598,7 @@ const PinBoard = forwardRef((
     // Cancel any ongoing actions if mouse leaves the board
     if (linkingState) setLinkingState(null);
     if (panState.current.isPanning) panState.current.isPanning = false;
-    if (dragState || resizeState) setPins(localPins);
+    if (dragState || resizeState) setPins(localPinsRef.current);
     if (dragState) setDragState(null);
     if (resizeState) setResizeState(null);
     if (marqueeState) setMarqueeState(null);
@@ -894,7 +902,7 @@ const PinBoard = forwardRef((
   return (
     <div 
       ref={boardContainerRef}
-      className="w-full h-full border-t border-border-color relative overflow-hidden select-none cursor-grab bg-gradient-to-b from-[#050816] via-[#020617] to-[#020617]"
+      className={`w-full h-full border-t border-border-color relative overflow-hidden select-none cursor-grab ${environment.backgroundClass}`}
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
       onMouseLeave={onMouseLeave}
@@ -916,8 +924,12 @@ const PinBoard = forwardRef((
           transform={transform}
         />
         <div 
-          className="absolute top-0 left-0 min-w-full min-h-full bg-[radial-gradient(circle_at_1px_1px,#1f2937_1px,transparent_0)] [background-size:32px_32px]"
-          style={{ transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`, transformOrigin: '0 0' }}
+          className={`absolute top-0 left-0 min-w-full min-h-full ${environment.gridClass}`}
+          style={{ 
+            transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
+            transformOrigin: '0 0',
+            opacity: isFlowMode ? 0.4 : 0.7,
+          }}
         >
           {selectionBounds && (
               <div className="export-hidden">

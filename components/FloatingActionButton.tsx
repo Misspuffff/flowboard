@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { UploadIcon } from './icons/UploadIcon';
 import { PlusIcon } from './icons/PlusIcon';
 import { TextIcon } from './icons/TextIcon';
@@ -8,6 +8,7 @@ import { SuggestImageIcon } from './icons/SuggestImageIcon';
 import { RemixIcon } from './icons/RemixIcon';
 import { DoNextIcon } from './icons/DoNextIcon';
 import { StyleguideIcon } from './icons/StyleguideIcon';
+import type { FlowEnvironment } from '../types';
 
 interface FABProps {
     isAnalyzing: boolean;
@@ -20,11 +21,13 @@ interface FABProps {
     onAnalyzeRemixes: () => void;
     onAnalyzeDoNext: () => void;
     isFlowMode: boolean;
+    environment: FlowEnvironment;
 }
 
 const FloatingActionButton: React.FC<FABProps> = ({ 
     isAnalyzing, 
     isFlowMode,
+    environment,
     onAddText, 
     onAddColor,
     // FIX: Destructure new granular handlers.
@@ -63,7 +66,9 @@ const FloatingActionButton: React.FC<FABProps> = ({
                         </div>
                         <span
                             className={`font-mono uppercase tracking-wide ${
-                                isFlowMode ? 'hidden' : 'hidden sm:inline'
+                                environment.showToolbarLabels && !isFlowMode
+                                    ? 'hidden sm:inline'
+                                    : 'hidden'
                             }`}
                         >
                             {isAnalyzing && btn.disabled ? 'Riff…' : btn.label}

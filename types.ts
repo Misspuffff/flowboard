@@ -2,6 +2,20 @@
 export type LinkSide = 'top' | 'right' | 'bottom' | 'left';
 export type ResizeCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
+export type FlowMode = 'explore' | 'flow';
+
+export interface FlowEnvironment {
+  id: string;
+  name: string;
+  description?: string;
+  backgroundClass: string; // Tailwind classes applied to the board container background
+  gridClass: string;       // Tailwind classes applied to the grid overlay
+  accentColorClass: string; // Tailwind text color class used for subtle accents
+  dimNonFocusedPins: boolean;
+  showToolbarLabels: boolean;
+  ambientSoundId?: string;
+}
+
 export interface Link {
   id: string;
   from: string; // pin id

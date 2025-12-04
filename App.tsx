@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { Pin, FlowBoardResponse, ImagePin, TextPin, ColorPin, BoardDnaPin, ImageSuggestionsPin, RemixesPin, DoNextPin, Link, StyleGuidePin, TagPin } from './types';
+import { Pin, FlowBoardResponse, ImagePin, TextPin, ColorPin, BoardDnaPin, ImageSuggestionsPin, RemixesPin, DoNextPin, Link, StyleGuidePin, TagPin, FlowMode, FlowEnvironment } from './types';
 import Header from './components/Header';
 import PinBoard from './components/PinBoard';
 import FloatingActionButton from './components/FloatingActionButton';
@@ -10,6 +10,7 @@ import { analyzeBoard, generateImage } from './services/geminiService';
 import { useHistoryState } from './hooks/useHistoryState';
 import { initDB, saveFile, getFile, deleteFile } from './services/dbService';
 import DropZoneOverlay from './components/DropZoneOverlay';
+import { FLOW_ENVIRONMENTS } from './services/flowEnvironments';
 
 const getImageDimensions = (file: File): Promise<{ width: number; height: number }> => {
     return new Promise((resolve, reject) => {
@@ -47,7 +48,17 @@ const NotificationToast: React.FC<{message: string}> = ({ message }) => {
 
 const App: React.FC = () => {
   const [isHydrating, setIsHydrating] = useState(true);
-  const [isFlowMode, setIsFlowMode] = useState(false);
+  const [mode, setMode] = useState<FlowMode>('explore');
+  const [environmentId, setEnvironmentId] = useState<string>('night-studio');
+
+  const environment: FlowEnvironment = useMemo(() => {
+    return (
+      FLOW_ENVIRONMENTS.find((env) => env.id === environmentId) ??
+      FLOW_ENVIRONMENTS[0]
+    );
+  }, [environmentId]);
+
+  const isFlowMode = mode === 'flow';
 
   const { 
     state, 
@@ -281,7 +292,14 @@ const App: React.FC = () => {
         dragCounter.current = 0;
         
         if (e.dataTransfer?.files) {
-            const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'));
+            const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.heic', '.heif', '.tif', '.tiff', '.bmp', '.svg'];
+
+            const files = Array.from(e.dataTransfer.files).filter(file => {
+                if (file.type && file.type.startsWith('image/')) return true;
+                const name = file.name.toLowerCase();
+                return imageExtensions.some(ext => name.endsWith(ext));
+            });
+
             if (files.length > 0) {
                 const newPinsData = files.map(file => ({
                     file,
@@ -572,7 +590,7 @@ const App: React.FC = () => {
         setExportModalOpen(true);
       } else if (key === 'f') {
         e.preventDefault();
-        setIsFlowMode(prev => !prev);
+        setMode(prev => (prev === 'explore' ? 'flow' : 'explore'));
       }
     };
 
@@ -700,7 +718,10 @@ const App: React.FC = () => {
           canRedo={canRedo}
           onExport={() => setExportModalOpen(true)}
           isFlowMode={isFlowMode}
-          onToggleFlowMode={() => setIsFlowMode(prev => !prev)}
+          mode={mode}
+          environment={environment}
+          onToggleFlowMode={() => setMode(prev => (prev === 'explore' ? 'flow' : 'explore'))}
+          onChangeEnvironment={setEnvironmentId}
         />
         <main className="flex-1 relative">
           <PinBoard 
@@ -724,10 +745,12 @@ const App: React.FC = () => {
             selectedPinIds={selectedPinIds}
             setSelectedPinIds={setSelectedPinIds}
             isFlowMode={isFlowMode}
+            environment={environment}
           />
           <FloatingActionButton 
             isAnalyzing={isLoading || isGeneratingFromTag}
             isFlowMode={isFlowMode}
+            environment={environment}
             onAddText={() => setAddTextModalOpen(true)}
             onAddColor={handleOpenColorModal}
             onAnalyzeDna={handleAnalyzeDna}
