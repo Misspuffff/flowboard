@@ -5,6 +5,9 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
+      // This "base" is required so assets work when the site is served from
+      // https://misspuffff.github.io/flowboard/ instead of the domain root.
+      base: '/flowboard/',
       server: {
         port: 3000,
         host: '0.0.0.0',
@@ -18,6 +21,10 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
-      }
+      },
+      // Build straight into "docs" so GitHub Pages can serve from there.
+      build: {
+        outDir: 'docs',
+      },
     };
 });
