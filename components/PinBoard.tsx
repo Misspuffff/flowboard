@@ -65,7 +65,8 @@ type ResizeState = {
 };
 
 // Shared drag threshold (in pixels) to distinguish clicks from drags
-const DRAG_THRESHOLD_PX = 3;
+// Slightly higher value makes click+drag on trackpads feel less "slippery".
+const DRAG_THRESHOLD_PX = 6;
 const DRAG_THRESHOLD_SQ = DRAG_THRESHOLD_PX * DRAG_THRESHOLD_PX;
 
 const getClosestSide = (pin: Pin, point: { x: number, y: number }): LinkSide => {
@@ -621,30 +622,65 @@ const PinBoard = forwardRef((
 
         const PAN_STEP = 25;
         const ZOOM_STEP = 0.1;
+        const NUDGE_STEP = e.shiftKey ? 20 : 5;
 
-        let handled = true;
-        switch (e.key) {
-            case 'ArrowUp':
-                setTransform(t => ({ ...t, y: t.y + PAN_STEP }));
-                break;
-            case 'ArrowDown':
-                setTransform(t => ({ ...t, y: t.y - PAN_STEP }));
-                break;
-            case 'ArrowLeft':
-                setTransform(t => ({ ...t, x: t.x + PAN_STEP }));
-                break;
-            case 'ArrowRight':
-                setTransform(t => ({ ...t, x: t.x - PAN_STEP }));
-                break;
-            case '+':
-            case '=':
-                handleZoom(ZOOM_STEP);
-                break;
-            case '-':
-                handleZoom(-ZOOM_STEP);
-                break;
-            default:
-                handled = false;
+        let handled = false;
+
+        if (selectedPinIds.length > 0) {
+            // When pins are selected, arrow keys nudge them instead of panning the whole board.
+            switch (e.key) {
+                case 'ArrowUp':
+                    moveSelectedPins(0, -NUDGE_STEP);
+                    handled = true;
+                    break;
+                case 'ArrowDown':
+                    moveSelectedPins(0, NUDGE_STEP);
+                    handled = true;
+                    break;
+                case 'ArrowLeft':
+                    moveSelectedPins(-NUDGE_STEP, 0);
+                    handled = true;
+                    break;
+                case 'ArrowRight':
+                    moveSelectedPins(NUDGE_STEP, 0);
+                    handled = true;
+                    break;
+                default:
+                    // allow other keys (like +/- for zoom) to fall through
+                    break;
+            }
+        }
+
+        if (!handled) {
+            switch (e.key) {
+                case 'ArrowUp':
+                    setTransform(t => ({ ...t, y: t.y + PAN_STEP }));
+                    handled = true;
+                    break;
+                case 'ArrowDown':
+                    setTransform(t => ({ ...t, y: t.y - PAN_STEP }));
+                    handled = true;
+                    break;
+                case 'ArrowLeft':
+                    setTransform(t => ({ ...t, x: t.x + PAN_STEP }));
+                    handled = true;
+                    break;
+                case 'ArrowRight':
+                    setTransform(t => ({ ...t, x: t.x - PAN_STEP }));
+                    handled = true;
+                    break;
+                case '+':
+                case '=':
+                    handleZoom(ZOOM_STEP);
+                    handled = true;
+                    break;
+                case '-':
+                    handleZoom(-ZOOM_STEP);
+                    handled = true;
+                    break;
+                default:
+                    handled = false;
+            }
         }
 
         if (handled) {
@@ -656,7 +692,7 @@ const PinBoard = forwardRef((
     return () => {
         window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [handleZoom]);
+  }, [handleZoom, moveSelectedPins, selectedPinIds.length]);
 
   // Track spacebar separately for Figma-style panning (space + drag)
   useEffect(() => {
@@ -724,6 +760,18 @@ const PinBoard = forwardRef((
     setTransform({ x: 0, y: 0, scale: 1 });
   };
 
+  // Keyboard nudging for selected pins (helps especially on trackpads)
+  const moveSelectedPins = useCallback((dx: number, dy: number) => {
+    if (selectedPinIds.length === 0) return;
+    setPins(prevPins =>
+      prevPins.map(pin =>
+        selectedPinIds.includes(pin.id)
+          ? { ...pin, x: pin.x + dx, y: pin.y + dy }
+          : pin
+      )
+    );
+  }, [selectedPinIds, setPins]);
+  
   const selectionBounds = useMemo(() => {
     if (selectedPinIds.length === 0) return null;
 

@@ -244,41 +244,6 @@ const App: React.FC = () => {
     };
   }, [handleUndo, handleRedo]);
 
-  useEffect(() => {
-    const handleShortcuts = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement).closest('input, textarea, [contenteditable]')) {
-        return;
-      }
-
-      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-      const modifierKey = isMac ? e.metaKey : e.ctrlKey;
-
-      if (!modifierKey || !e.shiftKey) {
-        return;
-      }
-
-      const key = e.key.toLowerCase();
-
-      if (key === 'n') {
-        e.preventDefault();
-        setAddTextModalOpen(true);
-      } else if (key === 'c') {
-        e.preventDefault();
-        handleOpenColorModal();
-      } else if (key === 'e') {
-        e.preventDefault();
-        setExportModalOpen(true);
-      } else if (key === 'f') {
-        e.preventDefault();
-        setIsFlowMode(prev => !prev);
-      }
-    };
-
-    window.addEventListener('keydown', handleShortcuts);
-    return () => {
-      window.removeEventListener('keydown', handleShortcuts);
-    };
-  }, [handleOpenColorModal]);
 
   // Effect for global drag-and-drop
   useEffect(() => {
@@ -579,6 +544,43 @@ const App: React.FC = () => {
     }
     setAddColorModalOpen(true);
   };
+
+  // Global keyboard shortcuts (Shift+Cmd/Ctrl+N/C/E/F)
+  useEffect(() => {
+    const handleShortcuts = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement).closest('input, textarea, [contenteditable]')) {
+        return;
+      }
+
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const modifierKey = isMac ? e.metaKey : e.ctrlKey;
+
+      if (!modifierKey || !e.shiftKey) {
+        return;
+      }
+
+      const key = e.key.toLowerCase();
+
+      if (key === 'n') {
+        e.preventDefault();
+        setAddTextModalOpen(true);
+      } else if (key === 'c') {
+        e.preventDefault();
+        handleOpenColorModal();
+      } else if (key === 'e') {
+        e.preventDefault();
+        setExportModalOpen(true);
+      } else if (key === 'f') {
+        e.preventDefault();
+        setIsFlowMode(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleShortcuts);
+    return () => {
+      window.removeEventListener('keydown', handleShortcuts);
+    };
+  }, [handleOpenColorModal]);
 
   const handleAddColor = (hex: string) => {
     const center = pinBoardRef.current?.getCenter() ?? { x: 300, y: 300 };
