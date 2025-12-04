@@ -3,7 +3,7 @@ import { UndoIcon } from './icons/UndoIcon';
 import { RedoIcon } from './icons/RedoIcon';
 import { ExportIcon } from './icons/ExportIcon';
 import { AppearanceIcon } from './icons/AppearanceIcon';
-import type { FlowMode, FlowEnvironment } from '../types';
+import type { FlowMode, FlowEnvironment, ExperienceMode } from '../types';
 import { FLOW_ENVIRONMENTS } from '../services/flowEnvironments';
 
 interface HeaderProps {
@@ -15,8 +15,10 @@ interface HeaderProps {
   isFlowMode: boolean;
   mode: FlowMode;
   environment: FlowEnvironment;
+  experienceMode: ExperienceMode;
   onToggleFlowMode: () => void;
   onChangeEnvironment: (id: string) => void;
+  onChangeExperienceMode: (mode: ExperienceMode) => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -28,12 +30,32 @@ const Header: React.FC<HeaderProps> = ({
   isFlowMode,
   mode,
   environment,
+  experienceMode,
   onToggleFlowMode,
   onChangeEnvironment,
+  onChangeExperienceMode,
 }) => {
   const [modifierSymbol, setModifierSymbol] = useState('Ctrl');
   const [redoShortcut, setRedoShortcut] = useState('Ctrl+Y');
   const [isEnvPopoverOpen, setEnvPopoverOpen] = useState(false);
+
+  const experienceOptions: { id: ExperienceMode; label: string; title: string }[] = [
+    {
+      id: 'manual',
+      label: 'Manual',
+      title: 'Only show manually curated tools (no AI helpers).',
+    },
+    {
+      id: 'ai',
+      label: 'AI',
+      title: 'Emphasize AI helpers powered by your current canvas.',
+    },
+    {
+      id: 'hybrid',
+      label: 'Hybrid',
+      title: 'Use both manual tools and AI helpers.',
+    },
+  ];
 
   useEffect(() => {
     const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -85,6 +107,27 @@ const Header: React.FC<HeaderProps> = ({
               {environment.name}
             </span>
           </button>
+          <div className="hidden xl:flex items-center gap-1 px-1 py-1 rounded-full bg-slate-900/80 border border-slate-700/80">
+            {experienceOptions.map((option) => {
+              const isActive = experienceMode === option.id;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => onChangeExperienceMode(option.id)}
+                  className={`px-2 py-0.5 rounded-full text-[11px] font-mono uppercase tracking-wide transition-all ${
+                    isActive
+                      ? 'bg-slate-100 text-slate-900 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'
+                  }`}
+                  aria-pressed={isActive}
+                  title={option.title}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
           <button
             onClick={onToggleFlowMode}
             className={`hidden sm:inline-flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all border ${

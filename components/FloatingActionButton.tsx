@@ -8,7 +8,7 @@ import { SuggestImageIcon } from './icons/SuggestImageIcon';
 import { RemixIcon } from './icons/RemixIcon';
 import { DoNextIcon } from './icons/DoNextIcon';
 import { StyleguideIcon } from './icons/StyleguideIcon';
-import type { FlowEnvironment } from '../types';
+import type { FlowEnvironment, ExperienceMode } from '../types';
 
 interface FABProps {
     isAnalyzing: boolean;
@@ -22,12 +22,14 @@ interface FABProps {
     onAnalyzeDoNext: () => void;
     isFlowMode: boolean;
     environment: FlowEnvironment;
+    experienceMode: ExperienceMode;
 }
 
 const FloatingActionButton: React.FC<FABProps> = ({ 
     isAnalyzing, 
     isFlowMode,
     environment,
+    experienceMode,
     onAddText, 
     onAddColor,
     // FIX: Destructure new granular handlers.
@@ -38,16 +40,27 @@ const FloatingActionButton: React.FC<FABProps> = ({
     onAnalyzeDoNext,
 }) => {
     // Figma/Miro-style: persistent left toolbar instead of radial FAB
-    const actionButtons = [
-        { icon: <UploadIcon />, label: 'Image', title: 'Pin an image from your computer', action: () => document.getElementById('file-input-global')?.click(), disabled: false },
-        { icon: <TextIcon />, label: 'Note', title: 'Add a text note to the board', action: onAddText, disabled: false },
-        { icon: <PaletteIcon />, label: 'Color', title: 'Add a color swatch to the board', action: onAddColor, disabled: false },
-        { icon: <DnaIcon />, label: 'DNA', title: 'Analyze the board\'s creative DNA', action: onAnalyzeDna, disabled: isAnalyzing },
-        { icon: <StyleguideIcon />, label: 'Style', title: 'Generate a style guide from the board', action: onAnalyzeStyleGuide, disabled: isAnalyzing },
-        { icon: <SuggestImageIcon />, label: 'Ideas', title: 'Get AI-powered image suggestions', action: onAnalyzeSuggestions, disabled: isAnalyzing },
-        { icon: <RemixIcon />, label: 'Remix', title: 'Generate creative remixes and variants', action: onAnalyzeRemixes, disabled: isAnalyzing },
-        { icon: <DoNextIcon />, label: 'Next', title: 'Get suggestions for what to do next', action: onAnalyzeDoNext, disabled: isAnalyzing },
-    ];
+    const allButtons = [
+        { icon: <UploadIcon />, label: 'Image', title: 'Pin an image from your computer', action: () => document.getElementById('file-input-global')?.click(), disabled: false, category: 'shared' as const },
+        { icon: <TextIcon />, label: 'Note', title: 'Add a text note to the board', action: onAddText, disabled: false, category: 'manual' as const },
+        { icon: <PaletteIcon />, label: 'Color', title: 'Add a color swatch to the board', action: onAddColor, disabled: false, category: 'manual' as const },
+        { icon: <DnaIcon />, label: 'DNA', title: 'Analyze the board\'s creative DNA', action: onAnalyzeDna, disabled: isAnalyzing, category: 'ai' as const },
+        { icon: <StyleguideIcon />, label: 'Style', title: 'Generate a style guide from the board', action: onAnalyzeStyleGuide, disabled: isAnalyzing, category: 'ai' as const },
+        { icon: <SuggestImageIcon />, label: 'Ideas', title: 'Get AI-powered image suggestions', action: onAnalyzeSuggestions, disabled: isAnalyzing, category: 'ai' as const },
+        { icon: <RemixIcon />, label: 'Remix', title: 'Generate creative remixes and variants', action: onAnalyzeRemixes, disabled: isAnalyzing, category: 'ai' as const },
+        { icon: <DoNextIcon />, label: 'Next', title: 'Get suggestions for what to do next', action: onAnalyzeDoNext, disabled: isAnalyzing, category: 'ai' as const },
+    ] as const;
+
+    const actionButtons = allButtons.filter((btn) => {
+        if (experienceMode === 'manual') {
+            return btn.category === 'manual' || btn.category === 'shared';
+        }
+        if (experienceMode === 'ai') {
+            return btn.category === 'ai' || btn.category === 'shared';
+        }
+        // hybrid
+        return true;
+    });
 
     return (
         <div className="absolute inset-y-0 left-4 z-30 flex items-center pointer-events-none export-hidden">

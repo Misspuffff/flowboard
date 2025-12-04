@@ -1,8 +1,9 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { Pin, FlowBoardResponse, ImagePin, TextPin, ColorPin, BoardDnaPin, ImageSuggestionsPin, RemixesPin, DoNextPin, Link, StyleGuidePin, TagPin, FlowMode, FlowEnvironment } from './types';
+import { Pin, FlowBoardResponse, ImagePin, TextPin, ColorPin, BoardDnaPin, ImageSuggestionsPin, RemixesPin, DoNextPin, Link, StyleGuidePin, TagPin, FlowMode, FlowEnvironment, ExperienceMode } from './types';
 import Header from './components/Header';
 import PinBoard from './components/PinBoard';
 import FloatingActionButton from './components/FloatingActionButton';
+import AgentPanel from './components/AgentPanel';
 import AddTextModal from './components/modals/AddTextModal';
 import AddColorModal from './components/modals/AddColorModal';
 import ExportModal from './components/modals/ExportModal';
@@ -50,6 +51,7 @@ const App: React.FC = () => {
   const [isHydrating, setIsHydrating] = useState(true);
   const [mode, setMode] = useState<FlowMode>('explore');
   const [environmentId, setEnvironmentId] = useState<string>('night-studio');
+  const [experienceMode, setExperienceMode] = useState<ExperienceMode>('hybrid');
 
   const environment: FlowEnvironment = useMemo(() => {
     return (
@@ -71,6 +73,12 @@ const App: React.FC = () => {
   } = useHistoryState<BoardState>(DEFAULT_BOARD_STATE);
 
   const { pins, links } = state;
+
+  const imagePinsSignature = useMemo(() => {
+    const imagePins = pins.filter(p => p.type === 'image') as ImagePin[];
+    if (imagePins.length === 0) return '';
+    return imagePins.map(p => `${p.file.name}:${p.file.lastModified}`).join('|');
+  }, [pins]);
 
   const setPins = useCallback((action: React.SetStateAction<Pin[]>) => {
     setState(prevState => {
@@ -114,6 +122,7 @@ const App: React.FC = () => {
 
   const [lastAnalysis, setLastAnalysis] = useState<FlowBoardResponse | null>(null);
   const [analysisCacheKey, setAnalysisCacheKey] = useState<string | null>(null);
+  const [isAutoAnalyzing, setIsAutoAnalyzing] = useState(false);
 
   const [selectedPinIds, setSelectedPinIds] = useState<string[]>([]);
   const pinBoardRef = useRef<{ 
@@ -122,6 +131,7 @@ const App: React.FC = () => {
   }>(null);
   const dragCounter = useRef(0);
   const rootElementRef = useRef(document.getElementById('root'));
+  const autoAnalysisKeyRef = useRef<string | null>(null);
 
   const showNotification = (message: string) => {
     if (notificationTimeoutRef.current) {
@@ -158,6 +168,16 @@ const App: React.FC = () => {
         }
 
         const savedState = JSON.parse(savedStateJSON);
+
+        if (savedState.mode) {
+          setMode(savedState.mode as FlowMode);
+        }
+        if (savedState.environmentId) {
+          setEnvironmentId(savedState.environmentId as string);
+        }
+        if (savedState.experienceMode) {
+          setExperienceMode(savedState.experienceMode as ExperienceMode);
+        }
 
         const hydratedPins = await Promise.all(
           savedState.boardState.pins.map(async (pin: any) => {
@@ -212,6 +232,9 @@ const App: React.FC = () => {
 
         const stateToSave = {
           boardState: { ...state, pins: serializablePins },
+          mode,
+          environmentId,
+          experienceMode,
         };
         localStorage.setItem('flowboard-state', JSON.stringify(stateToSave));
       } catch (err) {
@@ -224,7 +247,7 @@ const App: React.FC = () => {
     };
 
     saveState();
-  }, [state, isHydrating]);
+  }, [state, mode, environmentId, experienceMode, isHydrating]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -416,6 +439,43 @@ const App: React.FC = () => {
         }
     }
   }, [pins, lastAnalysis, analysisCacheKey, setLastAnalysis, setAnalysisCacheKey, setIsLoading, setError]);
+
+  // Auto-analysis: in AI & Hybrid modes, keep analysis in sync with image pins.
+  useEffect(() => {
+    if (experienceMode === 'manual') {
+      autoAnalysisKeyRef.current = null;
+      return;
+    }
+
+    if (!imagePinsSignature) {
+      autoAnalysisKeyRef.current = null;
+      return;
+    }
+
+    if (autoAnalysisKeyRef.current === imagePinsSignature) {
+      return;
+    }
+    autoAnalysisKeyRef.current = imagePinsSignature;
+
+    let cancelled = false;
+
+    const runAutoAnalysis = async () => {
+      try {
+        setIsAutoAnalyzing(true);
+        await getAnalysis({ silent: true });
+      } finally {
+        if (!cancelled) {
+          setIsAutoAnalyzing(false);
+        }
+      }
+    };
+
+    runAutoAnalysis();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [experienceMode, imagePinsSignature, getAnalysis]);
 
   const handleAnalyzeDna = async () => {
     const analysis = await getAnalysis();
@@ -720,8 +780,10 @@ const App: React.FC = () => {
           isFlowMode={isFlowMode}
           mode={mode}
           environment={environment}
+          experienceMode={experienceMode}
           onToggleFlowMode={() => setMode(prev => (prev === 'explore' ? 'flow' : 'explore'))}
           onChangeEnvironment={setEnvironmentId}
+          onChangeExperienceMode={setExperienceMode}
         />
         <main className="flex-1 relative">
           <PinBoard 
@@ -748,9 +810,10 @@ const App: React.FC = () => {
             environment={environment}
           />
           <FloatingActionButton 
-            isAnalyzing={isLoading || isGeneratingFromTag}
+            isAnalyzing={isLoading || isGeneratingFromTag || isAutoAnalyzing}
             isFlowMode={isFlowMode}
             environment={environment}
+            experienceMode={experienceMode}
             onAddText={() => setAddTextModalOpen(true)}
             onAddColor={handleOpenColorModal}
             onAnalyzeDna={handleAnalyzeDna}
@@ -759,6 +822,17 @@ const App: React.FC = () => {
             onAnalyzeRemixes={handleAnalyzeRemixes}
             onAnalyzeDoNext={handleAnalyzeDoNext}
           />
+          {(experienceMode === 'ai' || experienceMode === 'hybrid') && (
+            <AgentPanel
+              experienceMode={experienceMode}
+              analysis={lastAnalysis}
+              isAnalyzing={isLoading || isGeneratingFromTag || isAutoAnalyzing}
+              hasImages={pins.some((p) => p.type === 'image')}
+              onAnalyzeNow={() => {
+                void getAnalysis();
+              }}
+            />
+          )}
         </main>
         {isAddTextModalOpen && (
           <AddTextModal 

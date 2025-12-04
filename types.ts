@@ -4,6 +4,8 @@ export type ResizeCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-ri
 
 export type FlowMode = 'explore' | 'flow';
 
+export type ExperienceMode = 'manual' | 'ai' | 'hybrid';
+
 export interface FlowEnvironment {
   id: string;
   name: string;
